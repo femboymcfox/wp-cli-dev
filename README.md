@@ -1,144 +1,239 @@
- curl -s https://api.github.com/orgs/wp-cli/repos?per_page=100 | jq -r '.[].cldone_url' | while read url; do
-  archive_status=$(curl -s $url | jq -r '.archived');   if [[ "$archive_status" != "true" ]]; then     git clone "$url";   fi; done
-  
-  
-  
-  
-  
-  How do i set up the development environment for wp-cli in wp-cli-dev? 
-ChatGPT said:
+wp-cli/wp-cli-dev
+=================
 
-To set up the development environment for WP-CLI (specifically wp-cli-dev), follow these steps:
-1. Install Dependencies
+Sets up a WP-CLI development environment that allows for easy development across all packages.
 
-You'll need to have a few dependencies installed before you can begin developing WP-CLI.
-a. PHP
+This allows easy development across all packages and contains additional maintenance commands that simplify repository chores and the release process.
 
-WP-CLI is a command-line interface for WordPress, so it requires PHP. You can check if you have PHP installed using:
 
-php -v
 
-If PHP is not installed, you can install it using your system's package manager. For example:
+Quick links: [Installation](#installation) | [Development](#development) | [Using](#using) | [Contributing](#contributing) | [Support](#support)
 
-    On Ubuntu/Debian:
+## Installation
 
-sudo apt install php-cli php-curl php-mbstring php-xml php-zip
+If you normally use WP-CLI on your web host or via Brew, you're most likely using the Phar executable (`wp-cli.phar`). This Phar executable file is the "built", singular version of WP-CLI. It is compiled from a couple dozen repositories in the WP-CLI GitHub organization.
 
-On macOS (with Homebrew):
+In order to make code changes to WP-CLI, you'll need to set up this `wp-cli-dev` development environment on your local machine. The setup process will:
 
-    brew install php
+1. Clone all relevant packages from the `wp-cli` GitHub organization into the `wp-cli-dev` folder, and
+2. Install all Composer dependencies for a complete `wp-cli-bundle` setup, while symlinking all of the previously cloned packages into the Composer `vendor` folder.
+3. Symlink all folder in `vendor` into corresponding `vendor` folders in each repository, thus making the centralized functionality based on Composer available in each repository subfolder.
 
-<<<<<<< Updated upstream
 Before you can proceed further, you'll need to make sure you have [Composer](https://getcomposer.org/), PHP, and a functioning MySQL or MariaDB server on your local machine.
-=======
-b. Composer
->>>>>>> Stashed changes
 
-WP-CLI uses Composer to manage PHP dependencies, so you'll need to have Composer installed. You can check if Composer is installed using:
+Once the prerequisites are met, clone the GitHub repository and run the installation process:
 
-composer --version
-
-If Composer is not installed, you can install it globally using:
-
-curl -sS https://getcomposer.org/installer | php
-sudo mv composer.phar /usr/local/bin/composer
-
-c. Git
-
-Git is necessary for pulling code from WP-CLI’s GitHub repository and for managing versions. Verify if you have Git installed:
-
-git --version
-
-If Git is not installed, you can install it using:
-
-    On Ubuntu/Debian:
-
-sudo apt install git
-
-On macOS:
-
-    brew install git
-
-2. Clone the WP-CLI Repository
-
-Clone the WP-CLI repository to your local machine. Choose a directory where you want to keep your WP-CLI development environment and clone the wp-cli repository.
-
-git clone https://github.com/wp-cli/wp-cli.git
-cd wp-cli
-
-3. Set Up WP-CLI Development Environment
-a. Install Development Dependencies
-
-WP-CLI requires some development dependencies that are defined in the composer.json file. Install them using Composer:
-
+```bash
+git clone https://github.com/wp-cli/wp-cli-dev wp-cli-dev
+cd wp-cli-dev
 composer install
+composer prepare-tests
+```
 
-b. Install Development Tools
+## Development
 
-WP-CLI includes various tools for testing, linting, and other development tasks. To install these tools, run:
+Every subfolder is a proper clone of the corresponding GitHub repository. This means that you can create new branches, make your changes, commit to the new branch and then submit as pull-request, all from within these folders.
 
-composer install --dev
+Unless you have commit access to the repository, you'll need to fork the repository in order to push your feature branch. [GitHub's CLI](https://github.com/cli/cli) is pretty helpful for this:
 
-4. Configure the Development Environment
+```bash
+cd core-command
+gh repo fork
+```
 
-WP-CLI's development environment relies on some configuration files. You'll likely want to make sure the following files exist in your local repo:
+As the folders are also symlinked into the Composer `vendor` folder, you will always have the latest changes available when running WP-CLI through the `vendor/bin/wp` executable.
 
-    wp-cli.yml
-    A YAML configuration file where you can specify default settings for WP-CLI commands (if needed).
+## Using
 
-    wp-config.php
-    This is the typical WordPress configuration file, which you may need to create or adjust, especially if you plan to test WP-CLI commands against a local WordPress instance.
+This package implements the following commands:
 
-Example: Creating a Basic wp-config.php for Local Development
+### wp maintenance
 
-You may need to set up a basic WordPress environment for testing WP-CLI. Here’s a simplified example for your wp-config.php:
+Provides tools to manage the WP-CLI GitHub organization and the release process.
 
-<?php
-define( 'DB_NAME', 'wordpress' );
-define( 'DB_USER', 'root' );
-define( 'DB_PASSWORD', '' );
-define( 'DB_HOST', 'localhost' );
-
-define( 'WP_DEBUG', true );
-define( 'WP_HOME', 'http://localhost' );
-define( 'WP_SITEURL', 'http://localhost' );
-
-5. Test Your Setup
-
-Now that everything is set up, you can run WP-CLI commands to verify that it works. Try running:
-
-php bin/wp --info
-
-This command should show you information about your WP-CLI installation. If everything is set up correctly, you'll see detailed output including the version of WP-CLI, PHP, and system paths.
-6. Start Developing
-
-Now that the development environment is ready, you can start developing WP-CLI commands or contributing to the project. If you're developing a custom command or adding functionality, follow these steps:
-
-    Write a Custom Command
-
-        Create a PHP file in the php/commands directory.
-
-        Define a class that extends WP_CLI_Command and define your command functionality.
-
-    Test Your Command
-
-        Use bin/wp to run your custom commands.
-
-        Test your code locally with a WordPress environment set up.
-
-7. Optional: Set Up Automated Testing
-
-WP-CLI includes automated tests, and it's a good practice to write and run tests as you develop. To set up PHPUnit for testing:
-
-    Install PHPUnit globally or through Composer.
-
-    Run the test suite:
-
-    composer run test
+~~~
+wp maintenance
+~~~
 
 
 
 
 
+### wp maintenance contrib-list
+
+Lists all contributors to this release.
+
+~~~
+wp maintenance contrib-list [<repo>] [<milestone>...] [--format=<format>]
+~~~
+
+Run within the main WP-CLI project repository.
+
+**OPTIONS**
+
+	[<repo>]
+		Name of the repository to fetch the release notes for. If no user/org
+		was provided, 'wp-cli' org is assumed. If no repo is passed, release
+		notes for the entire org state since the last bundle release are fetched.
+
+	[<milestone>...]
+		Name of one or more milestones to fetch the release notes for. If none
+		are passed, the current open one is assumed.
+
+	[--format=<format>]
+		Render output in a specific format.
+		---
+		default: markdown
+		options:
+		  - markdown
+		  - html
+		---
+
+
+
+### wp maintenance milestones-after
+
+Retrieves the milestones that were closed after a given milestone.
+
+~~~
+wp maintenance milestones-after <repo> <milestone>
+~~~
+
+**OPTIONS**
+
+	<repo>
+		Name of the repository to fetch the milestones for.
+
+	<milestone>
+		Milestone to serve as treshold.
+
+
+
+### wp maintenance milestones-since
+
+Retrieves the milestones that were closed for a given repository after a
+
+~~~
+wp maintenance milestones-since <repo> <date>
+~~~
+
+specific date treshold.
+
+**OPTIONS**
+
+	<repo>
+		Name of the repository to fetch the milestones for.
+
+	<date>
+		Threshold date to filter by.
+
+
+
+### wp maintenance release-date
+
+Retrieves the date a given release for a repository was published at.
+
+~~~
+wp maintenance release-date <repo> <release>
+~~~
+
+**OPTIONS**
+
+	<repo>
+		Name of the repository to fetch the release notes for. If no user/org
+		was provided, 'wp-cli' org is assumed.
+
+	<release>
+		Name of the release to fetch the release notes for.
+
+
+
+### wp maintenance release-notes
+
+Gets the release notes for one or more milestones of a repository.
+
+~~~
+wp maintenance release-notes [<repo>] [<milestone>...] [--source=<source>] [--format=<format>]
+~~~
+
+**OPTIONS**
+
+	[<repo>]
+		Name of the repository to fetch the release notes for. If no user/org
+		was provided, 'wp-cli' org is assumed. If no repo is passed, release
+		notes for the entire org state since the last bundle release are fetched.
+
+	[<milestone>...]
+		Name of one or more milestones to fetch the release notes for. If none
+		are passed, the current open one is assumed.
+
+	[--source=<source>]
+		Choose source from where to copy content.
+		---
+		default: release
+		options:
+		  - release
+		  - pull-request
+
+	[--format=<format>]
+		Render output in a specific format.
+		---
+		default: markdown
+		options:
+		  - markdown
+		  - html
+		---
+
+
+
+### wp maintenance replace-label
+
+Replaces a label with a different one, and optionally deletes the old
+
+~~~
+wp maintenance replace-label <repo> <old-label> <new-label> [--delete]
+~~~
+
+label.
+
+**OPTIONS**
+
+	<repo>
+		Name of the repository you want to replace a label for.
+
+	<old-label>
+		Old label to replace on all issues.
+
+	<new-label>
+		New label to replace it with.
+
+	[--delete]
+		Delete the old label after the operation is complete.
+
+## Contributing
+
+We appreciate you taking the initiative to contribute to this project.
+
+Contributing isn’t limited to just code. We encourage you to contribute in the way that best fits your abilities, by writing tutorials, giving a demo at your local meetup, helping other users with their support questions, or revising our documentation.
+
+For a more thorough introduction, [check out WP-CLI's guide to contributing](https://make.wordpress.org/cli/handbook/contributing/). This package follows those policy and guidelines.
+
+### Reporting a bug
+
+Think you’ve found a bug? We’d love for you to help us get it fixed.
+
+Before you create a new issue, you should [search existing issues](https://github.com/wp-cli/wp-cli-dev/issues?q=label%3Abug%20) to see if there’s an existing resolution to it, or if it’s already been fixed in a newer version.
+
+Once you’ve done a bit of searching and discovered there isn’t an open or fixed issue for your bug, please [create a new issue](https://github.com/wp-cli/wp-cli-dev/issues/new). Include as much detail as you can, and clear steps to reproduce if possible. For more guidance, [review our bug report documentation](https://make.wordpress.org/cli/handbook/bug-reports/).
+
+### Creating a pull request
+
+Want to contribute a new feature? Please first [open a new issue](https://github.com/wp-cli/wp-cli-dev/issues/new) to discuss whether the feature is a good fit for the project.
+
+Once you've decided to commit the time to seeing your pull request through, [please follow our guidelines for creating a pull request](https://make.wordpress.org/cli/handbook/pull-requests/) to make sure it's a pleasant experience. See "[Setting up](https://make.wordpress.org/cli/handbook/pull-requests/#setting-up)" for details specific to working on this package locally.
+
+## Support
+
+GitHub issues aren't for general support questions, but there are other venues you can try: https://wp-cli.org/#support
 
 
